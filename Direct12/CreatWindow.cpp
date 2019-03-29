@@ -79,29 +79,7 @@ bool InitializeWindow(HINSTANCE hInstance, int ShowWnd, bool fullscreen)
 	return true;
 }
 
-void mainloop() {
-
-	// 消息 
-	MSG msg;
-	ZeroMemory(&msg, sizeof(MSG));
-
-	while (isRuning)
-	{
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-		{
-			if (msg.message == WM_QUIT)
-				break;
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-		else {
-			Update(); // update the game logic
-			Render(); // execute the command queue (rendering the scene is the result of the gpu executing the command lists)
-		}
-	}
-}
-
-LRESULT CALLBACK WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
@@ -126,5 +104,30 @@ LRESULT CALLBACK WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 	}
 
 	return DefWindowProc(hwnd,msg,wParam,lParam);
+}
+
+void mainloop()
+{
+	// 消息 
+	MSG msg;
+	ZeroMemory(&msg, sizeof(MSG));
+
+	while (isRuning)
+	{
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			if (msg.message == WM_QUIT)
+				break;
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		else {
+			D3DLib* d = D3DLib::getInstance();
+			d->Update();
+			d->Render();
+			// update the game logic
+			// execute the command queue (rendering the scene is the result of the gpu executing the command lists)
+		}
+	}
 }
 

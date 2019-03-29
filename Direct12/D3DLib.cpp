@@ -3,36 +3,26 @@ using namespace DirectX;
 
 //==================================   direct3d stuff       ===================================
 
-const int frameBufferCount = 3; // 我们想要的缓冲区数量，2个用于双缓冲，3个用于三重缓冲 
+D3DLib* D3DLib::Instance = new D3DLib();
 
-ID3D12Device* device; // direct3d device
+D3DLib::D3DLib()
+{
+}
 
-IDXGISwapChain3* swapChain; // 用于在渲染目标之间切换的交换链
 
-ID3D12CommandQueue* commandQueue; // command lists 
+D3DLib::~D3DLib()
+{
+}
 
-ID3D12DescriptorHeap* rtvDescriptorHeap; // 描述符堆，用于保存渲染目标等资源 
+D3DLib * D3DLib::getInstance()
+{
+	if (Instance == NULL)
+		Instance = new D3DLib();
 
-ID3D12Resource* renderTargets[frameBufferCount]; // number of render targets equal to buffer count
+	return Instance;
+}
 
-ID3D12CommandAllocator* commandAllocator[frameBufferCount]; // 我们想为每个缓冲区提供足够的分配器*线程数（我们只有一个线程）
-
-ID3D12GraphicsCommandList* commandList; // 一个命令列表，我们可以记录命令，然后执行它们来渲染帧
-
-ID3D12Fence* fence[frameBufferCount];    
-// 在我们的命令列表由gpu执行时被锁定的对象。 我们需要尽可能多的分配器（如果我们想知道gpu何时完成资产，则需要更多）
-
-UINT64 fenceValue[frameBufferCount]; // 每帧增加此值。 每个 fence 都有自己的 值
-
-int frameIndex; // current rtv we are on
-
-int rtvDescriptorSize; // 设备上rtv描述符的大小（所有前后缓冲区大小相同
-
-HANDLE fenceEvent;
-
-// ========================================  functin ====================================================
-
-bool InitD3D()
+bool D3DLib::InitD3D()
 {
 	HRESULT hr;
 
@@ -94,7 +84,6 @@ bool InitD3D()
 	{
 		return false;
 	}
-
 	// -- Create a direct command queue -- //
 
 	D3D12_COMMAND_QUEUE_DESC cqDesc = {};
@@ -229,12 +218,12 @@ bool InitD3D()
 	return true;
 }
 
-void Update()
+void D3DLib::Update()
 {
 	// update app logic, such as moving the camera or figuring out what objects are in view
 }
 
-void UpdatePipeline()
+void D3DLib::UpdatePipeline()
 {
 	HRESULT hr;
 
@@ -291,7 +280,7 @@ void UpdatePipeline()
 	}
 }
 
-void Render()
+void D3DLib::Render()
 {
 	HRESULT hr;
 
@@ -320,7 +309,7 @@ void Render()
 	}
 }
 
-void Cleanup()
+void D3DLib::Cleanup()
 {
 	// wait for the gpu to finish all frames
 	for (int i = 0; i < frameBufferCount; ++i)
@@ -348,7 +337,7 @@ void Cleanup()
 	};
 }
 
-void WaitForPreviousFrame()
+void D3DLib::WaitForPreviousFrame()
 {
 	HRESULT hr;
 
@@ -373,4 +362,53 @@ void WaitForPreviousFrame()
 
 	// swap the current rtv buffer index so we draw on the correct buffer
 	frameIndex = swapChain->GetCurrentBackBufferIndex();
+}
+
+void D3DLib::LogAdapterOutputs(IDXGIAdapter* adapter)
+{
+	UINT i = 0;
+	IDXGIOutput* output = nullptr;
+	DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	while (adapter->EnumOutputs(i, &output) != DXGI_ERROR_NOT_FOUND)
+	{
+		DXGI_OUTPUT_DESC desc;
+		output->GetDesc(&desc);
+
+		std::wstring text = L"***Output: ";
+		text += desc.DeviceName;
+		text += L"\n";
+		std::wcout << text << std::endl;
+
+		LogOutputDisplayModes(output, mBackBufferFormat);
+
+		ReleaseCom(output);
+
+		++i;
+	}
+}
+
+void D3DLib::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format)
+{
+	UINT count = 0;
+	UINT flags = 0;
+
+	// Call with nullptr to get list count.
+	output->GetDisplayModeList(format, flags, &count, nullptr);
+
+	std::vector<DXGI_MODE_DESC> modeList(count);
+	
+	output->GetDisplayModeList(format, flags, &count, &modeList[0]);
+
+	for (auto& x : modeList)
+	{
+		UINT n = x.RefreshRate.Numerator;
+		UINT d = x.RefreshRate.Denominator;
+		std::wstring text =
+			L"Width = " + std::to_wstring(x.Width) + L" " +
+			L"Height = " + std::to_wstring(x.Height) + L" " +
+			L"Refresh = " + std::to_wstring(n) + L"/" + std::to_wstring(d) +
+			L"\n";
+
+		std::wcout << text << std::endl;
+	}
 }

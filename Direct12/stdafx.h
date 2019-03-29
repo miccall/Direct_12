@@ -13,30 +13,30 @@
 #include <DirectXMath.h>
 #include "d3dx12.h"
 #include <string>
+#include <vector>
 using namespace std;
 
 // this will only call release if an object exists (prevents exceptions calling release on non existent objects)
 #define SAFE_RELEASE(p) { if ( (p) ) { (p)->Release(); (p) = 0; } }
 
+#ifndef ReleaseCom
+#define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }
+#endif
+
 // Handle to the window
 extern HWND hwnd ;
-
 // name of the window (not the title)
 extern  LPCTSTR WindowName ;
-
 // title of the window
 extern  LPCTSTR WindowTitle ;
-
 // width and height of the window
 extern  int Width ;
 extern  int Height ;
-
 // is window full screen?
 extern  bool FullScreen ;
-
 // we will exit the program when this becomes false
 extern  bool isRuning;
 
-extern HANDLE fenceEvent; // a handle to an event when our fence is unlocked by the gpu
+
 
 
