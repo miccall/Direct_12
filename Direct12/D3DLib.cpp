@@ -9,7 +9,6 @@ D3DLib::D3DLib()
 {
 }
 
-
 D3DLib::~D3DLib()
 {
 }
@@ -24,22 +23,11 @@ D3DLib * D3DLib::getInstance()
 
 bool D3DLib::InitD3D()
 {
-	HRESULT hr;
 
-	// -- Create the Device -- //
-
-	IDXGIFactory4* dxgiFactory;
 	hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
-	if (FAILED(hr))
-	{
-		return false;
-	}
-
-	IDXGIAdapter1* adapter; // adapters are the graphics card (this includes the embedded graphics on the motherboard)
-	int adapterIndex = 0; // we'll start looking for direct x 12  compatible graphics devices starting at index 0
-	bool adapterFound = false; // set this to true when a good one was found
-							   // find first hardware gpu that supports d3d 12
-
+	if (FAILED(hr)) return false;
+	
+	// 循环便利所以设备 
 	while (dxgiFactory->EnumAdapters1(adapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND)
 	{
 		DXGI_ADAPTER_DESC1 desc;
@@ -56,34 +44,19 @@ bool D3DLib::InitD3D()
 		if (SUCCEEDED(hr))
 		{
 			adapterFound = true;
-
-			wstring s = L"adapter:";
-			s += desc.Description;
-			s += L"\n";
-			std::wcout << s << std::endl;
-
 			break;
 		}
 
 		adapterIndex++;
 	}
+	if (!adapterFound) return false;
 
-	if (!adapterFound)
-	{
-		return false;
-	}
+	// 如果找到合适的设备 
+	hr = D3D12CreateDevice(adapter,D3D_FEATURE_LEVEL_11_0,IID_PPV_ARGS(&device));
+	if (FAILED(hr)) return false;
 
-	// Create the device
-	hr = D3D12CreateDevice(
-		adapter,
-		D3D_FEATURE_LEVEL_11_0,
-		IID_PPV_ARGS(&device)
-	);
 
-	if (FAILED(hr))
-	{
-		return false;
-	}
+
 	// -- Create a direct command queue -- //
 
 	D3D12_COMMAND_QUEUE_DESC cqDesc = {};
@@ -91,13 +64,11 @@ bool D3DLib::InitD3D()
 	cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT; // direct means the gpu can directly execute this command queue
 
 	hr = device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&commandQueue)); // create the command queue
-	if (FAILED(hr))
-	{
-		return false;
-	}
+	if (FAILED(hr)) return false;
+
+
 
 	// -- Create the Swap Chain (double/tripple buffering) -- //
-
 	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
 	backBufferDesc.Width = Width; // buffer width
 	backBufferDesc.Height = Height; // buffer height
@@ -364,7 +335,26 @@ void D3DLib::WaitForPreviousFrame()
 	frameIndex = swapChain->GetCurrentBackBufferIndex();
 }
 
-void D3DLib::LogAdapterOutputs(IDXGIAdapter* adapter)
+
+void D3DLib::LogAdapters()
+{
+	wstring s = L"adapter:";
+	if (adapterFound)
+	{
+		DXGI_ADAPTER_DESC desc;
+		adapter->GetDesc(&desc);
+		s += desc.Description;
+		s += L"\n";
+	}
+	else
+	{
+		s += L"Not found ";
+		s += L"\n";
+	}
+	std::wcout << s << std::endl;
+}
+
+void D3DLib::LogAdapterOutputs()
 {
 	UINT i = 0;
 	IDXGIOutput* output = nullptr;
@@ -381,7 +371,7 @@ void D3DLib::LogAdapterOutputs(IDXGIAdapter* adapter)
 
 		LogOutputDisplayModes(output, mBackBufferFormat);
 
-		ReleaseCom(output);
+		SAFE_RELEASE(output);
 
 		++i;
 	}
@@ -406,7 +396,7 @@ void D3DLib::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format)
 		std::wstring text =
 			L"Width = " + std::to_wstring(x.Width) + L" " +
 			L"Height = " + std::to_wstring(x.Height) + L" " +
-			L"Refresh = " + std::to_wstring(n) + L"/" + std::to_wstring(d) +
+			L"Refresh = "+ std::to_wstring(n/d)+"Hz"
 			L"\n";
 
 		std::wcout << text << std::endl;

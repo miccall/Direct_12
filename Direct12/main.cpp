@@ -1,7 +1,7 @@
 #include "CreatWindow.h"
 using namespace DirectX; //math library
 
-constexpr auto Debug = false ;
+constexpr auto Debug = true; //  false;
 int WINAPI WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpCmdLine,int nShowCmd)
 {
 	// 运行开调试窗口
@@ -27,7 +27,6 @@ int WINAPI WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpCmdLine,i
 		d3dapp->Cleanup();
 		return 1;
 	}
-
 	// start the main loop
 	mainloop();
 
