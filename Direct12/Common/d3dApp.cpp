@@ -63,7 +63,7 @@ void D3DApp::Set4xMsaaState(bool value)
     {
         m4xMsaaState = value;
 
-        // Recreate the swapchain and buffers with new multisample settings.
+        // Recreate the swap chain and buffers with new multi sample settings.
         CreateSwapChain();
         OnResize();
     }
@@ -118,8 +118,10 @@ bool D3DApp::Initialize()
 	return true;
 }
  
+// 创建描述符堆 
 void D3DApp::CreateRtvAndDsvDescriptorHeaps()
 {
+	// 存储要用到的描述符 
     D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
     rtvHeapDesc.NumDescriptors = SwapChainBufferCount;
     rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
@@ -419,7 +421,7 @@ bool D3DApp::InitDirect3D()
 		D3D_FEATURE_LEVEL_11_0,
 		IID_PPV_ARGS(&md3dDevice));
 
-	// Fallback to WARP device.
+	// Fall back to WARP device.回退到WARP设备：一种软件适配器
 	if(FAILED(hardwareResult))
 	{
 		ComPtr<IDXGIAdapter> pWarpAdapter;
@@ -431,9 +433,11 @@ bool D3DApp::InitDirect3D()
 			IID_PPV_ARGS(&md3dDevice)));
 	}
 
+	//显示报错
 	ThrowIfFailed(md3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
 		IID_PPV_ARGS(&mFence)));
 
+	// 缓存同步fence大小
 	mRtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	mDsvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 	mCbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -441,7 +445,8 @@ bool D3DApp::InitDirect3D()
     // Check 4X MSAA quality support for our back buffer format.
     // All Direct3D 11 capable devices support 4X MSAA for all render 
     // target formats, so we only need to check quality support.
-
+	
+	// 检测 4xMsAA支持 
 	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels;
 	msQualityLevels.Format = mBackBufferFormat;
 	msQualityLevels.SampleCount = 4;
@@ -466,8 +471,10 @@ bool D3DApp::InitDirect3D()
 	return true;
 }
 
+// CPU和 GPU的交互 
 void D3DApp::CreateCommandObjects()
 {
+	// 命令队列 GPU可以直接执行的 command 
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
@@ -490,9 +497,10 @@ void D3DApp::CreateCommandObjects()
 	mCommandList->Close();
 }
 
+//创建交换链 
 void D3DApp::CreateSwapChain()
 {
-    // Release the previous swapchain we will be recreating.
+    // Release the previous swap chain we will be recreating.
     mSwapChain.Reset();
 
     DXGI_SWAP_CHAIN_DESC sd;
@@ -519,22 +527,26 @@ void D3DApp::CreateSwapChain()
 		mSwapChain.GetAddressOf()));
 }
 
+// CPU和GPU间同步
 void D3DApp::FlushCommandQueue()
 {
 	// Advance the fence value to mark commands up to this fence point.
+	// 用来标记围栏点的整数
     mCurrentFence++;
 
     // Add an instruction to the command queue to set a new fence point.  Because we 
-	// are on the GPU timeline, the new fence point won't be set until the GPU finishes
+	// are on the GPU time line, the new fence point won't be set until the GPU finishes
 	// processing all the commands prior to this Signal().
     ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mCurrentFence));
 
 	// Wait until the GPU has completed commands up to this fence point.
+	// 在cpu端等待GPU 直到后者执行完这个围栏点之前的所以命令 
     if(mFence->GetCompletedValue() < mCurrentFence)
 	{
 		HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
 
         // Fire event when GPU hits current fence.  
+		// 若gpu 命中当前的fnece ，执行到signal 点 修改了fence值，那么激发预定事件 
         ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentFence, eventHandle));
 
         // Wait until the GPU hits current fence event is fired.
@@ -593,6 +605,7 @@ void D3DApp::CalculateFrameStats()
 	}
 }
 
+//=====================================================================   适配器检查  ============================================================ 
 void D3DApp::LogAdapters()
 {
     UINT i = 0;

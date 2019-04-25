@@ -16,6 +16,9 @@
     <Filter Include="Common">
       <UniqueIdentifier>{6268dfbf-a876-4015-a702-63981a31c02f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="资源文件\Shader">
+      <UniqueIdentifier>{24337ebb-a710-4174-afd8-ff5d02e908dc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -74,5 +77,10 @@
     <ClCompile Include="Common\MathHelper.cpp">
       <Filter>Common</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\color.hlsl">
+      <Filter>资源文件\Shader</Filter>
+    </None>
   </ItemGroup>
 </Project>
